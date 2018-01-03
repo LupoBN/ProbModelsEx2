@@ -1,5 +1,7 @@
 from Utils import *
 from EM import EM
+
+
 def em_initialization(articles, num_of_articles):
     clustered_articles = list()
     for i, article in enumerate(articles):
@@ -13,6 +15,10 @@ def filter_rare_words(develop_file, articles):
     frequencies = Counter()
     frequencies.update(words)
     articles = [Counter(word for word in article.elements() if frequencies[word] > 3) for article in articles]
+    filtered_words = set()
+    for article in articles:
+        filtered_words.update(set(article))
+    print "Vocabulary size:", len(filtered_words)
     return articles
 
 
