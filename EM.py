@@ -33,7 +33,7 @@ class EM(object):
                 cluster[word] /= total_cluster_words
 
     def _calculate_wti_numerator(self, i, t):
-        # TODO: Add the smoothing.
+        # TODO: Add the smoothing and underflow control.
         wti = self._alphas[i]
         for word in self._P[i]:
             wti *= math.pow(self._P[i][word], self._ntk[t][word])
@@ -65,6 +65,8 @@ class EM(object):
                 w[t].append(wti)
         for t in range(0, len(w)):
             alpha_j_sum = sum(w[i])
+            if alpha_j_sum <= 0.000001:
+                continue
             for i in range(0, len(self._alphas)):
                 w[t][i] /= alpha_j_sum
         self._update_alphas(w)
