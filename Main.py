@@ -1,5 +1,5 @@
 from Utils import *
-
+from EM import EM
 
 def em_initialization(articles, num_of_articles):
     clustered_articles = list()
@@ -19,6 +19,8 @@ def filter_rare_words(develop_file, articles):
 
 if __name__ == "__main__":
     train_file = "data/develop.txt"
+    num_of_topics = 9
     articles = read_file(train_file, parse_sep_articles, " ")
     articles = filter_rare_words(train_file, articles)
-    clusters = em_initialization(articles)
+    clusters = em_initialization(articles, num_of_topics)
+    em = EM(num_of_topics, articles, clusters)
