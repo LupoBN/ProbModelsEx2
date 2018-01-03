@@ -1,6 +1,6 @@
 from Utils import *
 from EM import EM
-
+import time
 def em_initialization(articles, num_of_articles):
     clustered_articles = list()
     for i, article in enumerate(articles):
@@ -24,3 +24,7 @@ if __name__ == "__main__":
     articles = filter_rare_words(train_file, articles)
     clusters = em_initialization(articles, num_of_topics)
     em = EM(num_of_topics, articles, clusters)
+    time0 = time.time()
+    em.update_parameters()
+    time1 = time.time()
+    print time1 - time0

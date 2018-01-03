@@ -9,8 +9,14 @@ class EM(object):
         self._P = list()
         self._one_divided_by_N = 1.0 / float(len(articles))
         self._ntk = articles
+        self._nt = list()
         self._article_clusters = article_clusters
+        self._initialize_nt(articles)
         self._initialize_parameters(num_of_topics, articles, article_clusters)
+
+    def _initialize_nt(self, articles):
+        for article in articles:
+            self._nt.append(len(article))
 
     def _initialize_parameters(self, num_of_topics, articles, article_clusters):
         for i in range(0, num_of_topics):
@@ -46,14 +52,13 @@ class EM(object):
                 self._alphas[i] *= w[t][i]
 
     def _update_P(self, w):
-        for i in range(0,len(self._P)):
+        for i in range(0, len(self._P)):
             for word in self._P[i]:
                 numerator = 0.0
                 denominator = 0.0
                 for t in range(0, len(w)):
                     numerator += w[t][i] * self._ntk[t][word]
-                    denominator += w[t][i] * sum(self._ntk[t].values())
-
+                    denominator += w[t][i] * self._nt[t]
                 self._P[i][word] = numerator / denominator
 
     def update_parameters(self):
