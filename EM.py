@@ -2,15 +2,18 @@ from collections import defaultdict
 
 import math
 
+EPSILON = 0.0001
+LAMBDA = 0.05
 
 class EM(object):
-    def __init__(self, num_of_topics, articles, article_clusters):
+    def __init__(self, num_of_topics, articles, article_clusters, vocab_size):
         self._alphas = list()
         self._P = list()
         self._one_divided_by_N = 1.0 / float(len(articles))
         self._ntk = articles
         self._nt = list()
         self._article_clusters = article_clusters
+        self._vocab_size = vocab_size # needed for smoothing
         self._initialize_nt(articles)
         self._initialize_parameters(num_of_topics, articles, article_clusters)
 
@@ -47,9 +50,16 @@ class EM(object):
 
     def _update_alphas(self, w):
         for i in range(0, len(self._alphas)):
-            self._alphas[i] = self._one_divided_by_N
+            # self._alphas[i] = self._one_divided_by_N
+            temp_sum = 0.0
             for t in range(0, len(w)):
-                self._alphas[i] *= w[t][i]
+                temp_sum += w[t][i]
+                # self._alphas[i] *= w[t][i] # should be sum?
+            new_alpha_i = self._one_divided_by_N * temp_sum
+            self._alphas[i] = new_alpha_i if new_alpha_i > 0 else EPSILON
+        alpha_sum = sum(self._alphas)
+        for i in range(0, len(self._alphas)):
+            self._alphas[i] /= alpha_sum
 
     def _update_P(self, w):
         for i in range(0, len(self._P)):
@@ -59,6 +69,8 @@ class EM(object):
                 for t in range(0, len(w)):
                     numerator += w[t][i] * self._ntk[t][word]
                     denominator += w[t][i] * self._nt[t]
+                numerator += LAMBDA
+                denominator += self._vocab_size * LAMBDA
                 self._P[i][word] = numerator / denominator
 
     def update_parameters(self):
@@ -69,10 +81,11 @@ class EM(object):
                 wti = self._calculate_wti_numerator(i, t)
                 w[t].append(wti)
         for t in range(0, len(w)):
-            alpha_j_sum = sum(w[i])
+            # alpha_j_sum = sum(w[i]) #should be t?
+            alpha_j_sum = sum(w[t])
             if alpha_j_sum <= 0.000001:
                 continue
-            for i in range(0, len(self._alphas)):
+            for i in range(0, len(self._alphas)):  # shouldn't it be done on the new alphas?
                 w[t][i] /= alpha_j_sum
         self._update_alphas(w)
         self._update_P(w)

@@ -18,15 +18,16 @@ def filter_rare_words(develop_file, articles):
     filtered_words = set()
     for article in articles:
         filtered_words.update(set(article))
-    print "Vocabulary size:", len(filtered_words)
-    return articles
+    vocab_size = len(filtered_words)
+    print "Vocabulary size:", vocab_size
+    return articles, vocab_size
 
 
 if __name__ == "__main__":
     train_file = "data/develop.txt"
     num_of_topics = 9
     articles = read_file(train_file, parse_sep_articles, " ")
-    articles = filter_rare_words(train_file, articles)
+    articles, vocab_size = filter_rare_words(train_file, articles)
     clusters = em_initialization(articles, num_of_topics)
-    em = EM(num_of_topics, articles, clusters)
+    em = EM(num_of_topics, articles, clusters, vocab_size)
     em.update_parameters()
