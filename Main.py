@@ -30,4 +30,5 @@ if __name__ == "__main__":
     articles, vocab_size = filter_rare_words(train_file, articles)
     clusters = em_initialization(articles, num_of_topics)
     em = EM(num_of_topics, articles, clusters, vocab_size)
+    likelihood = em.calculate_likelihood()
     em.update_parameters()

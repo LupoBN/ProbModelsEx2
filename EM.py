@@ -93,6 +93,28 @@ class EM(object):
                 denominator += self._vocab_size * LAMBDA
                 self._P[i][word] = numerator / denominator
 
+    # still not working well. what to do if word isn't in P[i] ? we then have math.log(0)
+    def calculate_likelihood(self):
+        total_ln_l = 0.0
+        for t in range(0, len(self._ntk)):
+            z = []
+            for i in range(0, len(self._alphas)):
+                k_sum = 0.0
+                for word in self._ntk[t]:
+                    k_sum += self._ntk[t][word] * math.log(self._P[i][word]) # how to do it if word isn't in P[i] ?
+                z.append(math.log(self._alphas[i]) + k_sum)
+            m = max(z)
+
+            e_sum = 0.0
+            for j in range(0, len(z)):
+                if z[j] - m >= -K:
+                    e_sum += math.exp(z[j] - m)
+
+            # do we want ln(L)? leave ln on the sum or not?
+            total_ln_l += m + math.log(e_sum)
+
+        return total_ln_l
+
     def update_parameters(self):
         w = list()
         for t in range(0, len(self._ntk)):
