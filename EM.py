@@ -4,6 +4,7 @@ import math
 
 EPSILON = 0.0001
 LAMBDA = 0.05
+K = 10
 
 class EM(object):
     def __init__(self, num_of_topics, articles, article_clusters, vocab_size):
@@ -41,11 +42,30 @@ class EM(object):
             for word in cluster:
                 cluster[word] /= total_cluster_words
 
+    def _calculate_z(self, t):
+        z = [0.0] * len(self._alphas)
+        for i in range(0, len(self._alphas)):
+            z[i] = math.log(self._alphas[i])
+            for word in self._P[i]:
+                z[i] += self._ntk[t][word] * math.log(self._P[i][word])
+        return z
+
+    def _calculate_stable_wti(self, z, i, m):
+        numerator = math.exp(z[i] - m)
+        denominator = 0.0
+        for j in range(0, len(z)):
+            if z[j] - m >= -K:
+                denominator += math.exp(z[j] - m)
+        return numerator / denominator
+
     def _calculate_wti_numerator(self, i, t):
         # TODO: Add the smoothing and underflow control.
-        wti = self._alphas[i]
-        for word in self._P[i]:
-            wti *= math.pow(self._P[i][word], self._ntk[t][word])
+        z = self._calculate_z(t)
+        m = max(z)
+        if z[i] - m < -K:
+            wti = 0.0
+        else:
+            wti = self._calculate_stable_wti(z, i, m)
         return wti
 
     def _update_alphas(self, w):
