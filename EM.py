@@ -146,6 +146,7 @@ class EM(object):
                 wti = self._calculate_wti_numerator(z, m, i)
                 w[t].append(wti)
         for t in range(0, len(w)):
+            i = 5
             alpha_j_sum = sum(w[t])
             if alpha_j_sum <= 0.000001:
                 continue
