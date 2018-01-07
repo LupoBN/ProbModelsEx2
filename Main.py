@@ -1,6 +1,6 @@
 from Utils import *
 from EM import EM
-
+import time
 
 def em_initialization(articles, num_of_articles):
     clustered_articles = list()
@@ -30,5 +30,10 @@ if __name__ == "__main__":
     articles, vocab_size = filter_rare_words(train_file, articles)
     clusters = em_initialization(articles, num_of_topics)
     em = EM(num_of_topics, articles, clusters, vocab_size)
-    likelihood = em.calculate_likelihood()
-    em.update_parameters()
+    while True:
+        time0 = time.time()
+        likelihood = em.calculate_likelihood()
+        print likelihood
+        em.update_parameters()
+        time1 = time.time()
+        print time1 - time0

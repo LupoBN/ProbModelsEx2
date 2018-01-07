@@ -6,6 +6,7 @@ EPSILON = 0.0001
 LAMBDA = 0.05
 K = 10
 
+
 class EM(object):
     def __init__(self, num_of_topics, articles, article_clusters, vocab_size):
         self._alphas = list()
@@ -14,7 +15,7 @@ class EM(object):
         self._ntk = articles
         self._nt = list()
         self._article_clusters = article_clusters
-        self._vocab_size = vocab_size # needed for smoothing
+        self._vocab_size = vocab_size  # needed for smoothing
         self._initialize_nt(articles)
         self._initialize_parameters(num_of_topics, articles, article_clusters)
 
@@ -25,7 +26,7 @@ class EM(object):
     def _initialize_parameters(self, num_of_topics, articles, article_clusters):
         for i in range(0, num_of_topics):
             self._alphas.append(1.0 / float(num_of_topics))
-            self._P.append(defaultdict(lambda: 0.0))
+            self._P.append(defaultdict(lambda: LAMBDA / (LAMBDA * self._vocab_size)))
         self._count_cluster_words(articles, article_clusters)
         self._initialize_word_probs()
 
@@ -52,16 +53,22 @@ class EM(object):
 
     def _calculate_stable_wti(self, z, i, m):
         numerator = math.exp(z[i] - m)
+        """
+        This code is not needed.
+         
         denominator = 0.0
         for j in range(0, len(z)):
-            if z[j] - m >= -K:
-                denominator += math.exp(z[j] - m)
+            #if z[j] - m >= -K:
+                #denominator += math.exp(z[j] - m)
         return numerator / denominator
+        
+        """
+        return numerator
 
-    def _calculate_wti_numerator(self, i, t):
+    def _calculate_wti_numerator(self, z, m, i):
         # TODO: Add the smoothing and underflow control.
-        z = self._calculate_z(t)
-        m = max(z)
+        #z = self._calculate_z(t)
+        #m = max(z)
         if z[i] - m < -K:
             wti = 0.0
         else:
@@ -101,7 +108,7 @@ class EM(object):
             for i in range(0, len(self._alphas)):
                 k_sum = 0.0
                 for word in self._ntk[t]:
-                    k_sum += self._ntk[t][word] * math.log(self._P[i][word]) # how to do it if word isn't in P[i] ?
+                    k_sum += self._ntk[t][word] * math.log(self._P[i][word])
                 z.append(math.log(self._alphas[i]) + k_sum)
             m = max(z)
 
@@ -118,16 +125,17 @@ class EM(object):
     def update_parameters(self):
         w = list()
         for t in range(0, len(self._ntk)):
+            z = self._calculate_z(t)
+            m = max(z)
             w.append(list())
             for i in range(0, len(self._alphas)):
-                wti = self._calculate_wti_numerator(i, t)
+                wti = self._calculate_wti_numerator(z, m, i)
                 w[t].append(wti)
         for t in range(0, len(w)):
-            # alpha_j_sum = sum(w[i]) #should be t?
-            alpha_j_sum = sum(w[t])
+            alpha_j_sum = sum(w[i])
             if alpha_j_sum <= 0.000001:
                 continue
-            for i in range(0, len(self._alphas)):  # shouldn't it be done on the new alphas?
+            for i in range(0, len(self._alphas)):
                 w[t][i] /= alpha_j_sum
         self._update_alphas(w)
         self._update_P(w)
