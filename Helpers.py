@@ -1,3 +1,5 @@
+# Matan Ben Noach Itay Mosafi 201120441 205790983
+
 import math
 # Calculate the perplexity of a given estimator on the validation data.
 def calculate_perplexity(estimator, validation):

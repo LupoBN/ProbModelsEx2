@@ -1,7 +1,9 @@
+# Matan Ben Noach Itay Mosafi 201120441 205790983
+
 # Parse the data file.
 from collections import Counter
 
-
+# Parse the articles without the titles to a list of words.
 def parse_no_title(lines, seperator):
     words = list()
     for i in range(2, len(lines), 4):
@@ -11,6 +13,7 @@ def parse_no_title(lines, seperator):
             words.append(word)
     return words
 
+# Parse the articles to a counter of words for each artile.
 def parse_sep_articles(lines, seperator):
     articles = list()
     for i in range(2, len(lines), 4):

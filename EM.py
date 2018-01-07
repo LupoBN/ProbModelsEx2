@@ -1,3 +1,5 @@
+# Matan Ben Noach Itay Mosafi 201120441 205790983
+
 from collections import defaultdict
 
 import math
@@ -19,10 +21,13 @@ class EM(object):
         self._initialize_nt(articles)
         self._initialize_parameters(num_of_topics, articles, article_clusters)
 
+    # Initialize the nt according to each length of an article.
     def _initialize_nt(self, articles):
         for article in articles:
             self._nt.append(len(article))
 
+
+    # Initialize the parameters according to
     def _initialize_parameters(self, num_of_topics, articles, article_clusters):
         for i in range(0, num_of_topics):
             self._alphas.append(1.0 / float(num_of_topics))
@@ -30,6 +35,7 @@ class EM(object):
         self._count_cluster_words(articles, article_clusters)
         self._initialize_word_probs()
 
+    # Initialize the P values.
     def _count_cluster_words(self, articles, article_clusters):
         for article, one_hot_vec in zip(articles, article_clusters):
             indices = [i for i, x in enumerate(one_hot_vec) if x == 1]
@@ -37,12 +43,14 @@ class EM(object):
                 for index in indices:
                     self._P[index][word] += 1.0
 
+    # Initialize the word probs.
     def _initialize_word_probs(self):
         for cluster in self._P:
             total_cluster_words = float(sum(cluster.values()))
             for word in cluster:
                 cluster[word] /= total_cluster_words
 
+    # Calculate the z value for the underflow management.
     def _calculate_z(self, t):
         z = [0.0] * len(self._alphas)
         for i in range(0, len(self._alphas)):
@@ -51,6 +59,7 @@ class EM(object):
                 z[i] += self._ntk[t][word] * math.log(self._P[i][word])
         return z
 
+    # Calculate the wti with the underflow management.
     def _calculate_stable_wti(self, z, i, m):
         numerator = math.exp(z[i] - m)
         """
@@ -65,8 +74,8 @@ class EM(object):
         """
         return numerator
 
+    # Calculate the numerator of wti.
     def _calculate_wti_numerator(self, z, m, i):
-        # TODO: Add the smoothing and underflow control.
         #z = self._calculate_z(t)
         #m = max(z)
         if z[i] - m < -K:
@@ -75,6 +84,7 @@ class EM(object):
             wti = self._calculate_stable_wti(z, i, m)
         return wti
 
+    # Update the alpha values.
     def _update_alphas(self, w):
         for i in range(0, len(self._alphas)):
             # self._alphas[i] = self._one_divided_by_N
@@ -88,6 +98,7 @@ class EM(object):
         for i in range(0, len(self._alphas)):
             self._alphas[i] /= alpha_sum
 
+    # Update the P values.
     def _update_P(self, w):
         for i in range(0, len(self._P)):
             for word in self._P[i]:
@@ -100,16 +111,19 @@ class EM(object):
                 denominator += self._vocab_size * LAMBDA
                 self._P[i][word] = numerator / denominator
 
-    # still not working well. what to do if word isn't in P[i] ? we then have math.log(0)
+    # Calculate the likelihood.
     def calculate_likelihood(self):
         total_ln_l = 0.0
         for t in range(0, len(self._ntk)):
-            z = []
+            #z = []
+            z = self._calculate_z(t)
+            """
             for i in range(0, len(self._alphas)):
                 k_sum = 0.0
                 for word in self._ntk[t]:
                     k_sum += self._ntk[t][word] * math.log(self._P[i][word])
                 z.append(math.log(self._alphas[i]) + k_sum)
+            """
             m = max(z)
 
             e_sum = 0.0
@@ -117,11 +131,11 @@ class EM(object):
                 if z[j] - m >= -K:
                     e_sum += math.exp(z[j] - m)
 
-            # do we want ln(L)? leave ln on the sum or not?
             total_ln_l += m + math.log(e_sum)
 
         return total_ln_l
 
+    # Update parameters.
     def update_parameters(self):
         w = list()
         for t in range(0, len(self._ntk)):
@@ -132,7 +146,7 @@ class EM(object):
                 wti = self._calculate_wti_numerator(z, m, i)
                 w[t].append(wti)
         for t in range(0, len(w)):
-            alpha_j_sum = sum(w[i])
+            alpha_j_sum = sum(w[t])
             if alpha_j_sum <= 0.000001:
                 continue
             for i in range(0, len(self._alphas)):
