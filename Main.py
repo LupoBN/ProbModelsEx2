@@ -1,7 +1,7 @@
 # Matan Ben Noach Itay Mosafi 201120441 205790983
 from Utils import *
 from EM import EM
-
+import time
 # Initialize the clusters according to the instructions.
 def em_initialization(articles, num_of_articles):
     clustered_articles = list()
@@ -36,11 +36,13 @@ if __name__ == "__main__":
     # Cluster the articles according to the initialization instructions.
     clusters = em_initialization(articles, num_of_topics)
     em = EM(num_of_topics, articles, clusters, vocab_size)
-    last_liklihood = 0.0
-    likelihood = 2.0
+    likelihood = -float("Inf")
+    last_liklihood = 1.0
+
     # EM algorithm.
-    while abs(last_liklihood - likelihood) > 0.000001:
+    while abs(last_liklihood - likelihood) > 0.01:
         last_liklihood = likelihood
         likelihood = em.calculate_likelihood()
         print likelihood
+        assert (likelihood > last_liklihood)
         em.update_parameters()

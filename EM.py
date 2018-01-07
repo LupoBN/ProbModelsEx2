@@ -55,7 +55,7 @@ class EM(object):
         z = [0.0] * len(self._alphas)
         for i in range(0, len(self._alphas)):
             z[i] = math.log(self._alphas[i])
-            for word in self._P[i]:
+            for word in self._ntk[t]:
                 z[i] += self._ntk[t][word] * math.log(self._P[i][word])
         return z
 
@@ -101,15 +101,14 @@ class EM(object):
     # Update the P values.
     def _update_P(self, w):
         for i in range(0, len(self._P)):
+            numerators = defaultdict(lambda: LAMBDA)
+            denominators = defaultdict(lambda: self._vocab_size * LAMBDA)
+            for t in range(0, len(w)):
+                for word in self._ntk[t]:
+                    numerators[word] += w[t][i] * self._ntk[t][word]
+                    denominators[word] += w[t][i] * self._nt[t]
             for word in self._P[i]:
-                numerator = 0.0
-                denominator = 0.0
-                for t in range(0, len(w)):
-                    numerator += w[t][i] * self._ntk[t][word]
-                    denominator += w[t][i] * self._nt[t]
-                numerator += LAMBDA
-                denominator += self._vocab_size * LAMBDA
-                self._P[i][word] = numerator / denominator
+                self._P[i][word] = numerators[word] / denominators[word]
 
     # Calculate the likelihood.
     def calculate_likelihood(self):
