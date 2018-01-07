@@ -35,6 +35,12 @@ class EM(object):
         self._count_cluster_words(articles, article_clusters)
         self._initialize_word_probs()
 
+    def get_word_prob(self, word):
+        prob = 0.0
+        for i in range(len(self._alphas)):
+            prob += self._alphas[i] * self._P[i][word]
+        return prob
+
     # Initialize the P values.
     def _count_cluster_words(self, articles, article_clusters):
         for article, one_hot_vec in zip(articles, article_clusters):
@@ -152,3 +158,28 @@ class EM(object):
                 w[t][i] /= alpha_j_sum
         self._update_alphas(w)
         self._update_P(w)
+
+    def cluster_articles(self, articles):
+        article_clusters = list()
+        for t, article in enumerate(articles):
+            article_clusters.append([0] * 9)
+            best = -float("Inf")
+            best_cluster = -1
+
+            for i in range(len(self._alphas)):
+                cluster_prob = self._alphas[i]
+                for word in article:
+                    cluster_prob *= article[word] * self._P[i][word]
+                if cluster_prob > best:
+                    best = cluster_prob
+                    best_cluster = i
+            article_clusters[t][best_cluster] = 1
+        return article_clusters
+
+
+
+
+
+
+
+
