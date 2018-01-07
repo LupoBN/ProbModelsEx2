@@ -76,6 +76,7 @@ if __name__ == "__main__":
     clusters = em_initialization(articles, num_of_topics)
     em = EM(num_of_topics, articles, clusters, vocab_size)
     likelihoods, perplexities = EM_Algorithm(em, list_of_words)
+    print "Accuracy: " + str(em.calculate_accuracy(article_topics))
     conf_mat = create_confusion_matrix(articles, article_topics)
     list_of_topics = sorted(topics, key=topics.get)
     plot_results(likelihoods, "Likelihood Graph", "Likelihood")

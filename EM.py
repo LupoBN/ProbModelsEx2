@@ -1,11 +1,12 @@
 # Matan Ben Noach Itay Mosafi 201120441 205790983
 
 from collections import defaultdict
+import numpy as np
 
 import math
 
-EPSILON = 0.0001
-LAMBDA = 0.05
+EPSILON = 0.001 #0.005 #0.0001
+LAMBDA = 0.1#0.1 #0.05
 K = 10
 
 
@@ -20,6 +21,7 @@ class EM(object):
         self._vocab_size = vocab_size  # needed for smoothing
         self._initialize_nt(articles)
         self._initialize_parameters(num_of_topics, articles, article_clusters)
+        self._last_wti = None
 
     # Initialize the nt according to each length of an article.
     def _initialize_nt(self, articles):
@@ -140,6 +142,15 @@ class EM(object):
 
         return total_ln_l
 
+    def calculate_accuracy(self, articles_topics):
+        correct_predictions = 0.0
+        for t in xrange(len(articles_topics)):
+            max_value_index = np.asarray(self._last_wti[t]).argsort()[-1:]
+            real_indexes = [i for i, x in enumerate(articles_topics[t]) if x == 1]
+            if max_value_index in real_indexes:
+                correct_predictions += 1
+        return correct_predictions / len(self._article_clusters)
+
     # Update parameters.
     def update_parameters(self):
         w = list()
@@ -156,6 +167,7 @@ class EM(object):
                 continue
             for i in range(0, len(self._alphas)):
                 w[t][i] /= alpha_j_sum
+        self._last_wti = w
         self._update_alphas(w)
         self._update_P(w)
 
