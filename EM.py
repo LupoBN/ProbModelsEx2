@@ -1,6 +1,6 @@
 # Matan Ben Noach Itay Mosafi 201120441 205790983
 
-from collections import defaultdict
+from collections import defaultdict, Counter
 import numpy as np
 
 import math
@@ -142,14 +142,36 @@ class EM(object):
 
         return total_ln_l
 
-    def calculate_accuracy(self, articles_topics):
+    def calculate_accuracy(self, topics, article_topics):
+        num_to_topic = {v: k for k, v in topics.iteritems()}
+        articles_clusters = self.cluster_articles(self._ntk)
+        cluster_topic_dict = self.create_cluster_topic_dict(articles_clusters, topics, article_topics)
         correct_predictions = 0.0
-        for t in xrange(len(articles_topics)):
-            max_value_index = np.asarray(self._last_wti[t]).argsort()[-1:]
-            real_indexes = [i for i, x in enumerate(articles_topics[t]) if x == 1]
-            if max_value_index in real_indexes:
+
+        for t in xrange(len(articles_clusters)):
+            cluster = articles_clusters[t].index(1)
+            topics_names = [num_to_topic[i] for i, x in enumerate(article_topics[t]) if x == 1]
+            if cluster_topic_dict[cluster] in topics_names:
                 correct_predictions += 1
-        return correct_predictions / len(self._article_clusters)
+        return correct_predictions / len(articles_clusters)
+
+    def create_cluster_topic_dict(self, articles_clusters, topics, article_topics):
+        cluster_topic_dict = {}
+        topic_couters = []
+        num_to_topic = {v: k for k, v in topics.iteritems()}
+        for i in xrange(len(self._alphas)):
+            c = Counter()
+            for t in topics.keys():
+                c[t] = 0
+            topic_couters.append(c)
+        for t in xrange(len(article_topics)):
+            for index, topic_value in enumerate(article_topics[t]):
+                topic_couters[articles_clusters[t].index(1)][num_to_topic[index]] += topic_value
+        for index, counter in enumerate(topic_couters):
+            max_value_topic = max(counter, key=counter.get)
+            cluster_topic_dict[index] = max_value_topic
+        return cluster_topic_dict
+
 
     # Update parameters.
     def update_parameters(self):
