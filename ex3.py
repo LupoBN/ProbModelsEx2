@@ -3,6 +3,7 @@ from Utils import *
 from Helpers import *
 from EM import EM
 
+
 # Initialize the clusters according to the instructions.
 def em_initialization(articles, num_of_articles):
     clustered_articles = list()
@@ -16,36 +17,42 @@ def em_initialization(articles, num_of_articles):
 def filter_rare_words(articles, words):
     frequencies = Counter()
     frequencies.update(words)
-    articles = [Counter(word for word in article.elements() if frequencies[word] > 3) for article in articles]
-    filtered_words = set()
-    for article in articles:
-        filtered_words.update(set(article))
-    vocab_size = len(filtered_words)
+    filtered_articles = [Counter(word for word in article.elements() if frequencies[word] > 3) for article in articles]
+    filtered_words = [word for word in words if frequencies[word] > 3]
+    filtered_words_set = set()
+    for article in filtered_articles:
+        filtered_words_set.update(set(article))
+    vocab_size = len(filtered_words_set)
     print "Vocabulary size:", vocab_size
-    return articles, vocab_size
+    return filtered_articles, vocab_size, filtered_words
+
 
 def EM_Algorithm(em, list_of_words):
-    likelihood = -float("Inf")
-    last_liklihood = 1.0
-    likelihoods = list()
-    perplexities = list()
-    counter = 0
+    em.update_parameters()
+
+    likelihoods = [int(em.calculate_likelihood())]
+    perplexities = [calculate_perplexity(em, list_of_words)]
     # EM algorithm.
-    while abs(last_liklihood - likelihood) > 0.01:
-        last_liklihood = likelihood
-        likelihood = em.calculate_likelihood()
+    while True:
+
+        em.update_parameters()
+        likelihood = int(em.calculate_likelihood())
         perplexity = calculate_perplexity(em, list_of_words)
         print "Likelihood:", likelihood
+        print "Perplexity", perplexity
+        print "Accuracy: " + str(em.calculate_accuracy(topics, article_topics))
         likelihoods.append(likelihood)
         perplexities.append(perplexity)
-        em.update_parameters()
-        counter += 1
-        if counter == 10:
+        if likelihoods[-1] == likelihoods[-2]:
             break
+
+        assert likelihoods[-1] >= likelihoods[-2]
+
     return likelihoods, perplexities
 
+
 def create_confusion_matrix(articles, article_topics):
-    conf_mat = [[0] * 10 for i in range(0,9)]
+    conf_mat = [[0] * 10 for i in range(0, 9)]
     clustered_articles = em.cluster_articles(articles)
 
     for i in range(len(clustered_articles)):
@@ -55,9 +62,6 @@ def create_confusion_matrix(articles, article_topics):
             conf_mat[article_cluster][ind] += 1
         conf_mat[article_cluster][-1] += 1
     return conf_mat
-
-
-
 
 
 if __name__ == "__main__":
@@ -71,12 +75,11 @@ if __name__ == "__main__":
     topics = read_file(topics_file, parse_topics)
     article_topics = read_file(train_file, parse_titile, "\t", topics)
     # Filter rare words.
-    articles, vocab_size = filter_rare_words(articles, list_of_words)
+    articles, vocab_size, list_of_words = filter_rare_words(articles, list_of_words)
     # Cluster the articles according to the initialization instructions.
     clusters = em_initialization(articles, num_of_topics)
     em = EM(num_of_topics, articles, clusters, vocab_size)
     likelihoods, perplexities = EM_Algorithm(em, list_of_words)
-    print "Accuracy: " + str(em.calculate_accuracy(topics, article_topics))
     conf_mat = create_confusion_matrix(articles, article_topics)
     list_of_topics = sorted(topics, key=topics.get)
     plot_results(likelihoods, "Likelihood Graph", "Likelihood")

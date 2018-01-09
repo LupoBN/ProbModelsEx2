@@ -1,12 +1,11 @@
 # Matan Ben Noach Itay Mosafi 201120441 205790983
-
+import copy
 from collections import defaultdict, Counter
-import numpy as np
 
 import math
 
-EPSILON = 0.001 #0.005 #0.0001
-LAMBDA = 0.1#0.1 #0.05
+EPSILON = 0.005  # 0.005 #0.0001
+LAMBDA = 1.0 # 0.1 #0.05
 K = 10
 
 
@@ -21,19 +20,25 @@ class EM(object):
         self._vocab_size = vocab_size  # needed for smoothing
         self._initialize_nt(articles)
         self._initialize_parameters(num_of_topics, articles, article_clusters)
-        self._last_wti = None
+        self._initialize()
 
+    def _initialize(self):
+        w = list()
+        for t in range(0, len(self._ntk)):
+            w.append(copy.deepcopy(self._article_clusters[t]))
+        self._update_alphas(w)
+        self._update_P(w)
+        self._last_wti = w
     # Initialize the nt according to each length of an article.
     def _initialize_nt(self, articles):
         for article in articles:
             self._nt.append(len(article))
 
-
     # Initialize the parameters according to
     def _initialize_parameters(self, num_of_topics, articles, article_clusters):
         for i in range(0, num_of_topics):
             self._alphas.append(1.0 / float(num_of_topics))
-            self._P.append(defaultdict(lambda: LAMBDA / (LAMBDA * self._vocab_size)))
+            self._P.append(defaultdict(lambda: (LAMBDA / (LAMBDA * float(self._vocab_size)))))
         self._count_cluster_words(articles, article_clusters)
         self._initialize_word_probs()
 
@@ -46,17 +51,20 @@ class EM(object):
     # Initialize the P values.
     def _count_cluster_words(self, articles, article_clusters):
         for article, one_hot_vec in zip(articles, article_clusters):
-            indices = [i for i, x in enumerate(one_hot_vec) if x == 1]
+            index = one_hot_vec.index(1)
             for word in article:
-                for index in indices:
+                if word in self._P[index]:
                     self._P[index][word] += 1.0
+                else:
+                    self._P[index][word] = 1.0
 
     # Initialize the word probs.
     def _initialize_word_probs(self):
         for cluster in self._P:
             total_cluster_words = float(sum(cluster.values()))
             for word in cluster:
-                cluster[word] /= total_cluster_words
+                cluster[word] += LAMBDA
+                cluster[word] /= (total_cluster_words + LAMBDA * self._vocab_size)
 
     # Calculate the z value for the underflow management.
     def _calculate_z(self, t):
@@ -72,20 +80,20 @@ class EM(object):
         numerator = math.exp(z[i] - m)
         """
         This code is not needed.
-         
+
         denominator = 0.0
         for j in range(0, len(z)):
-            #if z[j] - m >= -K:
-                #denominator += math.exp(z[j] - m)
+            if z[j] - m >= -K:
+                denominator += math.exp(z[j] - m)
         return numerator / denominator
-        
         """
+
         return numerator
 
     # Calculate the numerator of wti.
     def _calculate_wti_numerator(self, z, m, i):
-        #z = self._calculate_z(t)
-        #m = max(z)
+        # z = self._calculate_z(t)
+        # m = max(z)
         if z[i] - m < -K:
             wti = 0.0
         else:
@@ -101,28 +109,40 @@ class EM(object):
                 temp_sum += w[t][i]
                 # self._alphas[i] *= w[t][i] # should be sum?
             new_alpha_i = self._one_divided_by_N * temp_sum
-            self._alphas[i] = new_alpha_i if new_alpha_i > 0 else EPSILON
+            self._alphas[i] = new_alpha_i if new_alpha_i > EPSILON else EPSILON
         alpha_sum = sum(self._alphas)
         for i in range(0, len(self._alphas)):
             self._alphas[i] /= alpha_sum
 
     # Update the P values.
     def _update_P(self, w):
+
         for i in range(0, len(self._P)):
+            """
+            numerator = LAMBDA
+            denomirator = LAMBDA * self._vocab_size
+            for word in self._P[i]:
+                for t in range(0, len(w)):
+                    numerator += w[t][i] * self._ntk[t][word]
+                    denomirator += w[t][i] * self._nt[t]
+                self._P[i][word] = numerator / denomirator
+
+            """
             numerators = defaultdict(lambda: LAMBDA)
-            denominators = defaultdict(lambda: self._vocab_size * LAMBDA)
+            denominator = self._vocab_size * LAMBDA
             for t in range(0, len(w)):
                 for word in self._ntk[t]:
                     numerators[word] += w[t][i] * self._ntk[t][word]
-                    denominators[word] += w[t][i] * self._nt[t]
+                denominator += w[t][i] * self._nt[t]
             for word in self._P[i]:
-                self._P[i][word] = numerators[word] / denominators[word]
+                self._P[i][word] = numerators[word] / denominator
+
 
     # Calculate the likelihood.
     def calculate_likelihood(self):
         total_ln_l = 0.0
         for t in range(0, len(self._ntk)):
-            #z = []
+            # z = []
             z = self._calculate_z(t)
             """
             for i in range(0, len(self._alphas)):
@@ -185,8 +205,6 @@ class EM(object):
                 w[t].append(wti)
         for t in range(0, len(w)):
             alpha_j_sum = sum(w[t])
-            if alpha_j_sum <= 0.000001:
-                continue
             for i in range(0, len(self._alphas)):
                 w[t][i] /= alpha_j_sum
         self._last_wti = w
@@ -197,16 +215,7 @@ class EM(object):
         article_clusters = list()
         for t, article in enumerate(articles):
             article_clusters.append([0] * 9)
-            best = -float("Inf")
-            best_cluster = -1
-
-            for i in range(len(self._alphas)):
-                cluster_prob = self._alphas[i]
-                for word in article:
-                    cluster_prob *= article[word] * self._P[i][word]
-                if cluster_prob > best:
-                    best = cluster_prob
-                    best_cluster = i
+            best_cluster = self._last_wti[t].index(max(self._last_wti[t]))
             article_clusters[t][best_cluster] = 1
         return article_clusters
 
