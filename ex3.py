@@ -90,6 +90,7 @@ if __name__ == "__main__":
     """
     plot_results(likelihoods, "Log Likelihood", "Likelihood")
     plot_results(perplexities, "Perplexity", "Perplexity")
-    for histogram in conf_mat:
-        create_histogram(histogram[:-1], list_of_topics)
+    for i, histogram in enumerate(conf_mat):
+        create_histogram(histogram[:-1], list_of_topics, i + 1)
     """
+

@@ -8,18 +8,18 @@ def calculate_perplexity(likelihood, validation):
     log_likelihood /= -len(validation)
     # Return 2 in power of the log likelihood to retrieve the perplexity.
     return pow(2, log_likelihood)
-
 """
 
 import matplotlib.pyplot as plt
 import numpy as np
-def create_histogram(frequencies, topics):
+def create_histogram(frequencies, topics, cluster_num):
     x_pos = [i for i in range(len(topics))]
     plt.bar(x_pos, frequencies, align='center')
     plt.xticks(x_pos, topics)
     plt.ylabel('Number of articles')
     maximum = np.argmax(frequencies)
-    plt.title(topics[maximum] + " Cluster")
+    title_str = "Cluster #" + str(cluster_num) + "\nCluster Label:" +topics[maximum]
+    plt.title(title_str)
     plt.show()
 
 # Plots the result of the training.
