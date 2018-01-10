@@ -1,14 +1,13 @@
 # Matan Ben Noach Itay Mosafi 201120441 205790983
 import copy
 from collections import defaultdict, Counter
-
 import math
 
-EPSILON = 0.005  # 0.005 #0.0001
-LAMBDA = 1.0 # 0.1 #0.05
+EPSILON = 0.0001
+LAMBDA = 1.0
 K = 10
 
-
+# EM class that stores the
 class EM(object):
     def __init__(self, num_of_topics, articles, article_clusters, vocab_size):
         self._alphas = list()
@@ -42,12 +41,6 @@ class EM(object):
         self._count_cluster_words(articles, article_clusters)
         self._initialize_word_probs()
 
-    def get_word_prob(self, word):
-        prob = 0.0
-        for i in range(len(self._alphas)):
-            prob += self._alphas[i] * self._P[i][word]
-        return prob
-
     # Initialize the P values.
     def _count_cluster_words(self, articles, article_clusters):
         for article, one_hot_vec in zip(articles, article_clusters):
@@ -78,16 +71,6 @@ class EM(object):
     # Calculate the wti with the underflow management.
     def _calculate_stable_wti(self, z, i, m):
         numerator = math.exp(z[i] - m)
-        """
-        This code is not needed.
-
-        denominator = 0.0
-        for j in range(0, len(z)):
-            if z[j] - m >= -K:
-                denominator += math.exp(z[j] - m)
-        return numerator / denominator
-        """
-
         return numerator
 
     # Calculate the numerator of wti.
@@ -116,23 +99,14 @@ class EM(object):
 
     # Update the P values.
     def _update_P(self, w):
-
         for i in range(0, len(self._P)):
-            """
-            numerator = LAMBDA
-            denomirator = LAMBDA * self._vocab_size
-            for word in self._P[i]:
-                for t in range(0, len(w)):
-                    numerator += w[t][i] * self._ntk[t][word]
-                    denomirator += w[t][i] * self._nt[t]
-                self._P[i][word] = numerator / denomirator
-
-            """
             numerators = defaultdict(lambda: LAMBDA)
             denominator = self._vocab_size * LAMBDA
             for t in range(0, len(w)):
+                # Calculate the numerator for the word.
                 for word in self._ntk[t]:
                     numerators[word] += w[t][i] * self._ntk[t][word]
+                # Calculate the denominator for all the words.
                 denominator += w[t][i] * self._nt[t]
             for word in self._P[i]:
                 self._P[i][word] = numerators[word] / denominator
@@ -144,13 +118,6 @@ class EM(object):
         for t in range(0, len(self._ntk)):
             # z = []
             z = self._calculate_z(t)
-            """
-            for i in range(0, len(self._alphas)):
-                k_sum = 0.0
-                for word in self._ntk[t]:
-                    k_sum += self._ntk[t][word] * math.log(self._P[i][word])
-                z.append(math.log(self._alphas[i]) + k_sum)
-            """
             m = max(z)
 
             e_sum = 0.0
@@ -162,12 +129,15 @@ class EM(object):
 
         return total_ln_l
 
+    # Calculate the accuracy of the algorithm.
     def calculate_accuracy(self, topics, article_topics):
         num_to_topic = {v: k for k, v in topics.iteritems()}
+        # Cluster the articles according to the current parameters.
         articles_clusters = self.cluster_articles(self._ntk)
         cluster_topic_dict = self.create_cluster_topic_dict(articles_clusters, topics, article_topics)
         correct_predictions = 0.0
 
+        # Calculate the accuracy for that clustering.
         for t in xrange(len(articles_clusters)):
             cluster = articles_clusters[t].index(1)
             topics_names = [num_to_topic[i] for i, x in enumerate(article_topics[t]) if x == 1]
@@ -175,6 +145,7 @@ class EM(object):
                 correct_predictions += 1
         return correct_predictions / len(articles_clusters)
 
+    # Create a conversion vector that will map each cluster to its dominant topic.
     def create_cluster_topic_dict(self, articles_clusters, topics, article_topics):
         cluster_topic_dict = {}
         topic_couters = []
@@ -211,6 +182,7 @@ class EM(object):
         self._update_alphas(w)
         self._update_P(w)
 
+    # Cluster the given articles according to the last wti.
     def cluster_articles(self, articles):
         article_clusters = list()
         for t, article in enumerate(articles):

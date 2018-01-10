@@ -1,4 +1,6 @@
 # Matan Ben Noach Itay Mosafi 201120441 205790983
+import sys
+
 from Utils import *
 from Helpers import *
 from EM import EM
@@ -26,32 +28,28 @@ def filter_rare_words(articles, words):
     print "Vocabulary size:", vocab_size
     return filtered_articles, vocab_size, filtered_words
 
+# Start the iterations for the em algorithm.
+def EM_Algorithm(em, list_of_words, topics, article_topics):
+    likelihoods = [em.calculate_likelihood()]
+    perplexities = [calculate_perplexity(likelihoods[-1], list_of_words)]
 
-def EM_Algorithm(em, list_of_words):
-    em.update_parameters()
-
-    likelihoods = [int(em.calculate_likelihood())]
-    perplexities = [calculate_perplexity(em, list_of_words)]
     # EM algorithm.
     while True:
-
+        print "Likelihood:", likelihoods[-1]
+        print "Perplexity", perplexities[-1]
         em.update_parameters()
-        likelihood = int(em.calculate_likelihood())
-        perplexity = calculate_perplexity(em, list_of_words)
-        print "Likelihood:", likelihood
-        print "Perplexity", perplexity
-        print "Accuracy: " + str(em.calculate_accuracy(topics, article_topics))
-        likelihoods.append(likelihood)
-        perplexities.append(perplexity)
-        if likelihoods[-1] == likelihoods[-2]:
+        likelihoods.append(em.calculate_likelihood())
+        perplexities.append(calculate_perplexity(likelihoods[-1], list_of_words))
+        if abs(likelihoods[-1] - likelihoods[-2]) < 1.0:
             break
+        print "Accuracy: " + str(em.calculate_accuracy(topics, article_topics))
 
         assert likelihoods[-1] >= likelihoods[-2]
 
     return likelihoods, perplexities
 
-
-def create_confusion_matrix(articles, article_topics):
+# Create the confusion matrix.
+def create_confusion_matrix(articles, article_topics, em):
     conf_mat = [[0] * 10 for i in range(0, 9)]
     clustered_articles = em.cluster_articles(articles)
 
@@ -66,8 +64,8 @@ def create_confusion_matrix(articles, article_topics):
 
 if __name__ == "__main__":
 
-    train_file = "data/develop.txt"
-    topics_file = "data/topics.txt"
+    train_file = sys.argv[1]
+    topics_file = sys.argv[2]
     num_of_topics = 9
     # Read the articles and get the histograms of words for each article.
     articles = read_file(train_file, parse_sep_articles, " ")
@@ -79,10 +77,10 @@ if __name__ == "__main__":
     # Cluster the articles according to the initialization instructions.
     clusters = em_initialization(articles, num_of_topics)
     em = EM(num_of_topics, articles, clusters, vocab_size)
-    likelihoods, perplexities = EM_Algorithm(em, list_of_words)
-    conf_mat = create_confusion_matrix(articles, article_topics)
+    likelihoods, perplexities = EM_Algorithm(em, list_of_words, topics, article_topics)
+    conf_mat = create_confusion_matrix(articles, article_topics, em)
     list_of_topics = sorted(topics, key=topics.get)
-    plot_results(likelihoods, "Likelihood Graph", "Likelihood")
-    plot_results(perplexities, "Perplexity Graph", "Perplexity")
+    plot_results(likelihoods, "Log Likelihood", "Likelihood")
+    plot_results(perplexities, "Perplexity", "Perplexity")
     for histogram in conf_mat:
         create_histogram(histogram[:-1], list_of_topics)

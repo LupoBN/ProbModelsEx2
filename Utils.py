@@ -13,6 +13,7 @@ def parse_no_title(lines, seperator, topics=None):
             words.append(word)
     return words
 
+# Parse the title of the articles.
 def parse_titile(lines, seperator, topics):
     articles = list()
     for i in range(0, len(lines), 4):
@@ -23,6 +24,7 @@ def parse_titile(lines, seperator, topics):
                 articles[i / 4][topics[word]] = 1
     return articles
 
+# Parse the topics.
 def parse_topics(lines, seperator, topics):
     topics = dict()
     for i in range(0, len(lines), 2):

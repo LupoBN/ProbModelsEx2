@@ -1,23 +1,16 @@
 # Matan Ben Noach Itay Mosafi 201120441 205790983
-import matplotlib.pyplot as plt
-import numpy as np
-import math
+
+
 # Calculate the perplexity of a given estimator on the validation data.
-def calculate_perplexity(estimator, validation):
-    log_likelihood = 0.0
-    for word in validation:
-        # Estimate the probability of a word in the validation set.
-        prob = estimator.get_word_prob(word)
-        try:
-            # Calculate the log likelihood for a word in the validation set.
-            log_likelihood += math.log(prob, 2)
-        except:
-            log_likelihood += -float("Inf")
+def calculate_perplexity(likelihood, validation):
+    log_likelihood = likelihood
     # Take the negative average of the log likelihood.
     log_likelihood /= -len(validation)
     # Return 2 in power of the log likelihood to retrieve the perplexity.
     return pow(2, log_likelihood)
 
+import matplotlib.pyplot as plt
+import numpy as np
 def create_histogram(frequencies, topics):
     x_pos = [i for i in range(len(topics))]
     plt.bar(x_pos, frequencies, align='center')
