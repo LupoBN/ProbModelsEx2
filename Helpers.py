@@ -9,6 +9,8 @@ def calculate_perplexity(likelihood, validation):
     # Return 2 in power of the log likelihood to retrieve the perplexity.
     return pow(2, log_likelihood)
 
+"""
+
 import matplotlib.pyplot as plt
 import numpy as np
 def create_histogram(frequencies, topics):
@@ -27,3 +29,4 @@ def plot_results(history, title, ylabel, xlabel='Iteration number'):
     plt.xlabel(xlabel)
     plt.plot(history)
     plt.show()
+"""

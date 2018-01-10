@@ -35,17 +35,13 @@ def EM_Algorithm(em, list_of_words, topics, article_topics):
 
     # EM algorithm.
     while True:
-        print "Likelihood:", likelihoods[-1]
-        print "Perplexity", perplexities[-1]
+        print likelihoods[-1]
         em.update_parameters()
         likelihoods.append(em.calculate_likelihood())
         perplexities.append(calculate_perplexity(likelihoods[-1], list_of_words))
         if abs(likelihoods[-1] - likelihoods[-2]) < 1.0:
             break
-        print "Accuracy: " + str(em.calculate_accuracy(topics, article_topics))
-
-        assert likelihoods[-1] >= likelihoods[-2]
-
+    print "Accuracy: " + str(em.calculate_accuracy(topics, article_topics))
     return likelihoods, perplexities
 
 # Create the confusion matrix.
@@ -60,6 +56,16 @@ def create_confusion_matrix(articles, article_topics, em):
             conf_mat[article_cluster][ind] += 1
         conf_mat[article_cluster][-1] += 1
     return conf_mat
+
+def print_confusion_matrix(conf_mat):
+    print "=========Confusion Matrix========="
+    for i in range(len(conf_mat)):
+        for j in range(len(conf_mat[i])):
+            print conf_mat[i][j],
+        print
+    print "=========Confusion Matrix========="
+
+
 
 
 if __name__ == "__main__":
@@ -79,8 +85,11 @@ if __name__ == "__main__":
     em = EM(num_of_topics, articles, clusters, vocab_size)
     likelihoods, perplexities = EM_Algorithm(em, list_of_words, topics, article_topics)
     conf_mat = create_confusion_matrix(articles, article_topics, em)
+    print_confusion_matrix(conf_mat)
     list_of_topics = sorted(topics, key=topics.get)
+    """
     plot_results(likelihoods, "Log Likelihood", "Likelihood")
     plot_results(perplexities, "Perplexity", "Perplexity")
     for histogram in conf_mat:
         create_histogram(histogram[:-1], list_of_topics)
+    """

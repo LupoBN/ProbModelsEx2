@@ -18,9 +18,10 @@ class EM(object):
         self._article_clusters = article_clusters
         self._vocab_size = vocab_size  # needed for smoothing
         self._initialize_nt(articles)
-        self._initialize_parameters(num_of_topics, articles, article_clusters)
+        self._create_parameters(num_of_topics, articles, article_clusters)
         self._initialize()
 
+    # Initialize the parameters.
     def _initialize(self):
         w = list()
         for t in range(0, len(self._ntk)):
@@ -28,36 +29,25 @@ class EM(object):
         self._update_alphas(w)
         self._update_P(w)
         self._last_wti = w
+
     # Initialize the nt according to each length of an article.
     def _initialize_nt(self, articles):
         for article in articles:
             self._nt.append(len(article))
 
-    # Initialize the parameters according to
-    def _initialize_parameters(self, num_of_topics, articles, article_clusters):
+    # Create the list for alpha parameter and the dictionaries for the P parameter.
+    def _create_parameters(self, num_of_topics, articles, article_clusters):
         for i in range(0, num_of_topics):
             self._alphas.append(1.0 / float(num_of_topics))
             self._P.append(defaultdict(lambda: (LAMBDA / (LAMBDA * float(self._vocab_size)))))
-        self._count_cluster_words(articles, article_clusters)
-        self._initialize_word_probs()
+        self._fill_cluster_words(articles, article_clusters)
 
-    # Initialize the P values.
-    def _count_cluster_words(self, articles, article_clusters):
+    # Fill the words for every P dictionary.
+    def _fill_cluster_words(self, articles, article_clusters):
         for article, one_hot_vec in zip(articles, article_clusters):
             index = one_hot_vec.index(1)
             for word in article:
-                if word in self._P[index]:
-                    self._P[index][word] += 1.0
-                else:
-                    self._P[index][word] = 1.0
-
-    # Initialize the word probs.
-    def _initialize_word_probs(self):
-        for cluster in self._P:
-            total_cluster_words = float(sum(cluster.values()))
-            for word in cluster:
-                cluster[word] += LAMBDA
-                cluster[word] /= (total_cluster_words + LAMBDA * self._vocab_size)
+                self._P[index][word] = 1.0
 
     # Calculate the z value for the underflow management.
     def _calculate_z(self, t):
